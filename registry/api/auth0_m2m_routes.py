@@ -1,6 +1,6 @@
-"""API routes for Okta M2M client management.
+"""API routes for Auth0 M2M client management.
 
-This module provides endpoints for syncing Okta M2M applications to MongoDB
+This module provides endpoints for syncing Auth0 M2M applications to MongoDB
 and managing their group mappings.
 """
 
@@ -10,14 +10,13 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, HTTPException
 from registry.auth.dependencies import nginx_proxied_auth
 from registry.repositories.documentdb.client import get_documentdb_client
-from registry.schemas.okta_m2m_client import (
-    OktaM2MClient,
-    OktaM2MClientUpdate,
-    OktaSyncRequest,
-    OktaSyncResponse,
+from registry.schemas.idp_m2m_client import (
+    IdPM2MClient,
+    IdPM2MClientUpdate,
 )
+from pydantic import BaseModel
 
-from registry.services.okta_m2m_sync import get_okta_m2m_sync
+from registry.services.auth0_m2m_sync import get_auth0_m2m_sync
 
 logging.basicConfig(
     level=logging.INFO,
@@ -27,6 +26,22 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+class Auth0SyncRequest(BaseModel):
+    """Request payload for Auth0 M2M sync."""
+
+    force_full_sync: bool = False
+
+
+class Auth0SyncResponse(BaseModel):
+    """Response from Auth0 M2M sync operation."""
+
+    synced_count: int
+    added_count: int
+    updated_count: int
+    removed_count: int
+    errors: list[str]
 
 
 def _require_admin(user_context: dict | None) -> None:
@@ -49,14 +64,14 @@ def _require_admin(user_context: dict | None) -> None:
         )
 
 
-@router.post("/iam/okta/m2m/sync", response_model=OktaSyncResponse)
-async def sync_okta_m2m_clients(
-    request: OktaSyncRequest = OktaSyncRequest(),
+@router.post("/iam/auth0/m2m/sync", response_model=Auth0SyncResponse)
+async def sync_auth0_m2m_clients(
+    request: Auth0SyncRequest = Auth0SyncRequest(),
     user_context: Annotated[dict, Depends(nginx_proxied_auth)] = None,
 ):
-    """Sync M2M clients from Okta to MongoDB (admin only).
+    """Sync M2M clients from Auth0 to MongoDB (admin only).
 
-    This endpoint queries the Okta Admin API to fetch all M2M service applications
+    This endpoint queries the Auth0 Management API to fetch all M2M applications
     and stores/updates their information in MongoDB for authorization decisions.
 
     Args:
@@ -73,32 +88,32 @@ async def sync_okta_m2m_clients(
     _require_admin(user_context)
 
     db = await get_documentdb_client()
-    okta_sync = get_okta_m2m_sync(db)
-    if not okta_sync:
+    auth0_sync = get_auth0_m2m_sync(db)
+    if not auth0_sync:
         raise HTTPException(
             status_code=503,
-            detail="Okta sync not configured (missing OKTA_DOMAIN or OKTA_API_TOKEN)",
+            detail="Auth0 sync not configured (missing AUTH0_DOMAIN, AUTH0_M2M_CLIENT_ID, or AUTH0_M2M_CLIENT_SECRET)",
         )
 
     try:
-        result = await okta_sync.sync_from_okta(force_full_sync=request.force_full_sync)
-        return OktaSyncResponse(**result)
+        result = await auth0_sync.sync_from_auth0(force_full_sync=request.force_full_sync)
+        return Auth0SyncResponse(**result)
 
     except Exception as e:
-        logger.exception(f"Failed to sync Okta M2M clients: {e}")
+        logger.exception(f"Failed to sync Auth0 M2M clients: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Sync failed: {str(e)}",
         )
 
 
-@router.get("/iam/okta/m2m/clients", response_model=list[OktaM2MClient])
-async def list_okta_m2m_clients(
+@router.get("/iam/auth0/m2m/clients", response_model=list[IdPM2MClient])
+async def list_auth0_m2m_clients(
     user_context: Annotated[dict, Depends(nginx_proxied_auth)] = None,
 ):
-    """List all Okta M2M clients from MongoDB.
+    """List all Auth0 M2M clients from MongoDB.
 
-    Returns all M2M service accounts synced from Okta, including their
+    Returns all M2M service accounts synced from Auth0, including their
     client IDs and group mappings.
 
     Args:
@@ -106,7 +121,7 @@ async def list_okta_m2m_clients(
 
 
     Returns:
-        List of Okta M2M clients
+        List of Auth0 M2M clients
 
     Raises:
         HTTPException: If user is not authenticated
@@ -115,32 +130,32 @@ async def list_okta_m2m_clients(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     db = await get_documentdb_client()
-    okta_sync = get_okta_m2m_sync(db)
-    if not okta_sync:
-        # Return empty list if Okta not configured
+    auth0_sync = get_auth0_m2m_sync(db)
+    if not auth0_sync:
+        # Return empty list if Auth0 not configured
         return []
 
     try:
-        clients = await okta_sync.get_all_clients()
+        clients = await auth0_sync.get_all_clients()
         return clients
 
     except Exception as e:
-        logger.exception(f"Failed to list Okta M2M clients: {e}")
+        logger.exception(f"Failed to list Auth0 M2M clients: {e}")
         raise HTTPException(
             status_code=500,
             detail=f"Failed to retrieve clients: {str(e)}",
         )
 
 
-@router.get("/iam/okta/m2m/clients/{client_id}/groups", response_model=list[str])
+@router.get("/iam/auth0/m2m/clients/{client_id}/groups", response_model=list[str])
 async def get_client_groups(
     client_id: str,
     user_context: Annotated[dict, Depends(nginx_proxied_auth)] = None,
 ):
-    """Get groups for a specific Okta M2M client.
+    """Get groups for a specific Auth0 M2M client.
 
     Args:
-        client_id: Okta client ID
+        client_id: Auth0 client ID
         user_context: Authenticated user context
 
 
@@ -154,12 +169,12 @@ async def get_client_groups(
         raise HTTPException(status_code=401, detail="Not authenticated")
 
     db = await get_documentdb_client()
-    okta_sync = get_okta_m2m_sync(db)
-    if not okta_sync:
+    auth0_sync = get_auth0_m2m_sync(db)
+    if not auth0_sync:
         return []
 
     try:
-        groups = await okta_sync.get_client_groups(client_id)
+        groups = await auth0_sync.get_client_groups(client_id)
         return groups
 
     except Exception as e:
@@ -170,19 +185,18 @@ async def get_client_groups(
         )
 
 
-@router.patch("/iam/okta/m2m/clients/{client_id}/groups")
+@router.patch("/iam/auth0/m2m/clients/{client_id}/groups")
 async def update_client_groups(
     client_id: str,
-    payload: OktaM2MClientUpdate,
+    payload: IdPM2MClientUpdate,
     user_context: Annotated[dict, Depends(nginx_proxied_auth)] = None,
 ):
-    """Update groups for an Okta M2M client (admin only).
+    """Update groups for an Auth0 M2M client (admin only).
 
-    This allows administrators to change which groups a service account belongs to
-    without modifying the Okta authorization server expression.
+    This allows administrators to change which groups a service account belongs to.
 
     Args:
-        client_id: Okta client ID
+        client_id: Auth0 client ID
         payload: Update payload with new groups
         user_context: Authenticated user context
 
@@ -196,15 +210,15 @@ async def update_client_groups(
     _require_admin(user_context)
 
     db = await get_documentdb_client()
-    okta_sync = get_okta_m2m_sync(db)
-    if not okta_sync:
+    auth0_sync = get_auth0_m2m_sync(db)
+    if not auth0_sync:
         raise HTTPException(
             status_code=503,
-            detail="Okta sync not configured",
+            detail="Auth0 sync not configured",
         )
 
     try:
-        success = await okta_sync.update_client_groups(client_id, payload.groups)
+        success = await auth0_sync.update_client_groups(client_id, payload.groups)
 
         if not success:
             raise HTTPException(

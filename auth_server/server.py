@@ -1551,10 +1551,10 @@ async def validate_request(request: Request):
                     logger.error(f"Error processing request payload for tool extraction: {e}")
 
         # Validate scope-based access if we have server/tool information
-        # For providers that use groups (Keycloak, Entra ID, Cognito, Okta), map groups to scopes
+        # For providers that use groups (Keycloak, Entra ID, Cognito, Okta, Auth0), map groups to scopes
         user_groups = validation_result.get("groups", [])
         auth_method = validation_result.get("method", "")
-        if user_groups and auth_method in ["keycloak", "entra", "cognito", "okta"]:
+        if user_groups and auth_method in ["keycloak", "entra", "cognito", "okta", "auth0"]:
             # Map IdP groups to scopes using the group mappings (query DocumentDB)
             user_scopes = await map_groups_to_scopes(user_groups)
             logger.info(f"Mapped {auth_method} groups {user_groups} to scopes: {user_scopes}")
@@ -2657,6 +2657,24 @@ async def oauth2_callback(
                 logger.warning(
                     f"Okta ID token parsing failed: {e}, falling back to userInfo endpoint"
                 )
+                user_info = await get_user_info(token_data["access_token"], provider_config)
+                logger.info(f"Raw user info from {provider}: {user_info}")
+                mapped_user = map_user_info(user_info, provider_config)
+                logger.info(f"Mapped user info from userInfo: {mapped_user}")
+        elif provider == "auth0":
+            # For Auth0, delegate ID token parsing to the Auth0Provider
+            # which validates issuer/audience claims and extracts groups
+            # from a custom namespaced claim configured via Auth0 Actions/Rules
+            try:
+                auth0_provider = get_auth_provider("auth0")
+                mapped_user = auth0_provider.extract_user_from_tokens(token_data)
+                logger.info(f"User extracted from Auth0 ID token: {mapped_user}")
+
+            except Exception as e:
+                logger.warning(
+                    f"Auth0 ID token parsing failed: {e}, falling back to userInfo endpoint"
+                )
+                # Fallback to userInfo endpoint
                 user_info = await get_user_info(token_data["access_token"], provider_config)
                 logger.info(f"Raw user info from {provider}: {user_info}")
                 mapped_user = map_user_info(user_info, provider_config)
