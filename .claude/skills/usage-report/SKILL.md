@@ -184,7 +184,15 @@ Count and percentage of each storage value (mongodb-ce, documentdb, etc).
 Count and percentage of each auth value (auth0, keycloak, entra, cognito, none).
 
 ## Version Adoption
-Table of version strings with counts and percentages. Note which are release vs dev/branch versions.
+
+### By Events
+Table of version strings with event counts and percentages. Note which are release vs dev/branch versions.
+
+### By Unique Registry Instances
+Table of version strings with unique registry instance counts. Shows how many distinct deployments run each version (an instance is counted under the latest version it reported).
+
+### Last Seen Version per Registry Instance
+Table showing each registry_id with its cloud, compute, last reported version, and last seen date. Sorted by last seen date descending. Useful for tracking which instances are on old versions.
 
 ## Feature Adoption
 - Federation enabled rate
