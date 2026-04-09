@@ -91,7 +91,7 @@ OAUTH_STORE_TOKENS_IN_SESSION: bool = (
     os.environ.get("OAUTH_STORE_TOKENS_IN_SESSION", "false").lower() == "true"
 )
 
-logging.info(f"OAUTH_STORE_TOKENS_IN_SESSION={OAUTH_STORE_TOKENS_IN_SESSION}")
+logging.info(f"OAUTH_STORE_TOKENS_IN_SESSION={'enabled' if OAUTH_STORE_TOKENS_IN_SESSION else 'disabled'}")
 
 # Validate configuration: static token auth requires REGISTRY_API_TOKEN to be set
 if _registry_static_token_requested and not REGISTRY_API_TOKEN:
@@ -226,6 +226,39 @@ def mask_token(token: str) -> str:
     if len(token) > 8:
         return f"{token[:4]}..."
     return "***MASKED***"
+
+
+def _is_safe_redirect_url(
+    url: str,
+    allowed_hosts: set[str] | None = None,
+) -> bool:
+    """Validate that a redirect URL is safe (relative or same-origin).
+
+    Prevents open redirect attacks by ensuring the URL is either:
+    - A relative path (no scheme or netloc)
+    - An absolute URL with an allowed hostname and safe scheme (http/https)
+
+    Args:
+        url: The URL to validate.
+        allowed_hosts: Set of allowed hostnames. If None, only relative URLs are allowed.
+
+    Returns:
+        True if the URL is safe to redirect to, False otherwise.
+    """
+    if not url:
+        return False
+    parsed = urlparse(url)
+    # Allow relative URLs (no scheme and no netloc)
+    if not parsed.scheme and not parsed.netloc:
+        return True
+    # Block non-http(s) schemes (e.g., javascript:, data:, etc.)
+    if parsed.scheme not in ("http", "https"):
+        return False
+    # If allowed_hosts is provided, check hostname
+    if allowed_hosts is not None:
+        return parsed.hostname in allowed_hosts
+    # No allowed_hosts and URL is absolute — reject by default
+    return False
 
 
 def _mask_sensitive_dict(
@@ -1734,14 +1767,14 @@ async def validate_request(request: Request):
         logger.error(f"HTTP error during validation: {e}")
         raise HTTPException(
             status_code=500,
-            detail=f"Internal validation error: {str(e)}",
+            detail="Internal validation error",
             headers={"Connection": "close"},
         )
     except Exception as e:
-        logger.error(f"Unexpected error during validation: {e}")
+        logger.exception("Unexpected error during validation")
         raise HTTPException(
             status_code=500,
-            detail=f"Internal validation error: {str(e)}",
+            detail="Internal validation error",
             headers={"Connection": "close"},
         )
     finally:
@@ -1776,11 +1809,11 @@ async def get_auth_config():
                 "provider_info": provider_info,
             }
     except Exception as e:
-        logger.error(f"Error getting auth config: {e}")
+        logger.exception("Error getting auth config")
         return {
             "auth_type": "unknown",
-            "description": f"Error getting provider config: {e}",
-            "error": str(e),
+            "description": "Error getting provider config",
+            "error": "Internal server error",
         }
 
 
@@ -2357,8 +2390,8 @@ async def get_oauth2_providers():
         providers = get_enabled_providers()
         return {"providers": providers}
     except Exception as e:
-        logger.error(f"Error getting OAuth2 providers: {e}")
-        return {"providers": [], "error": str(e)}
+        logger.exception("Error getting OAuth2 providers")
+        return {"providers": [], "error": "Internal server error"}
 
 
 @app.get("/oauth2/login/{provider}")
@@ -2425,6 +2458,17 @@ async def oauth2_login(provider: str, request: Request, redirect_uri: str = None
 
         auth_url = f"{provider_config['auth_url']}?{urllib.parse.urlencode(auth_params)}"
 
+        # Validate the OAuth provider auth URL has a safe scheme before redirecting
+        parsed_auth_url = urlparse(auth_url)
+        if parsed_auth_url.scheme not in ("http", "https"):
+            logger.error(
+                f"Unsafe OAuth2 auth URL scheme '{parsed_auth_url.scheme}' for provider {provider}"
+            )
+            raise HTTPException(
+                status_code=400,
+                detail="Invalid OAuth2 provider configuration",
+            )
+
         # Create response with temporary session cookie
         response = RedirectResponse(url=auth_url, status_code=302)
         cookie_secure = scheme == "https"
@@ -2445,6 +2489,8 @@ async def oauth2_login(provider: str, request: Request, redirect_uri: str = None
     except Exception as e:
         logger.error(f"Error initiating OAuth2 login for {provider}: {e}")
         error_url = OAUTH2_CONFIG.get("registry", {}).get("error_redirect", "/login")
+        if not _is_safe_redirect_url(error_url):
+            error_url = "/login"
         return RedirectResponse(url=f"{error_url}?error=oauth2_init_failed", status_code=302)
 
 
@@ -2462,8 +2508,12 @@ async def oauth2_callback(
         if error:
             logger.warning(f"OAuth2 error from {provider}: {error}")
             error_url = OAUTH2_CONFIG.get("registry", {}).get("error_redirect", "/login")
+            # Validate error_url is a safe redirect target and URL-encode user-supplied error details
+            if not _is_safe_redirect_url(error_url):
+                error_url = "/login"
+            safe_details = urllib.parse.quote(str(error), safe="")
             return RedirectResponse(
-                url=f"{error_url}?error=oauth2_error&details={error}", status_code=302
+                url=f"{error_url}?error=oauth2_error&details={safe_details}", status_code=302
             )
 
         if not code or not state or not oauth2_temp_session:
@@ -2715,6 +2765,17 @@ async def oauth2_callback(
         redirect_url = temp_session_data.get(
             "redirect_uri", OAUTH2_CONFIG.get("registry", {}).get("success_redirect", "/")
         )
+        # Validate redirect_url to prevent open redirect attacks
+        # The redirect_uri originates from user input; allow relative URLs
+        # and same-origin URLs only
+        request_host = request.headers.get("host", "localhost")
+        # Strip port from host for hostname comparison
+        request_hostname = request_host.split(":")[0] if request_host else "localhost"
+        if not _is_safe_redirect_url(redirect_url, allowed_hosts={request_hostname}):
+            logger.warning(
+                f"Blocked unsafe redirect URL: {redirect_url}, falling back to /"
+            )
+            redirect_url = "/"
         response = RedirectResponse(url=redirect_url, status_code=302)
 
         # Set registry-compatible session cookie
@@ -2733,10 +2794,10 @@ async def oauth2_callback(
             cookie_domain = None
             logger.info("No cookie domain configured - cookie will be set for exact host only")
         else:
-            logger.info(f"Using explicitly configured cookie domain: {cookie_domain}")
+            logger.info("Using explicitly configured cookie domain")
 
         logger.info(
-            f"Auth server setting session cookie: secure={cookie_secure} (config={cookie_secure_config}, is_https={is_https}), samesite={cookie_samesite}, domain={cookie_domain or 'not set'}, x-forwarded-proto={request.headers.get('x-forwarded-proto', 'not set')}, request_scheme={request.url.scheme}"
+            f"Auth server setting session cookie: is_https={is_https}, domain={'configured' if cookie_domain else 'not set'}, x-forwarded-proto={request.headers.get('x-forwarded-proto', 'not set')}, request_scheme={request.url.scheme}"
         )
 
         cookie_params = {
@@ -2768,6 +2829,8 @@ async def oauth2_callback(
     except Exception as e:
         logger.error(f"Error in OAuth2 callback for {provider}: {e}")
         error_url = OAUTH2_CONFIG.get("registry", {}).get("error_redirect", "/login")
+        if not _is_safe_redirect_url(error_url):
+            error_url = "/login"
         return RedirectResponse(url=f"{error_url}?error=oauth2_callback_failed", status_code=302)
 
 
@@ -2819,7 +2882,7 @@ def map_user_info(user_info: dict, provider_config: dict) -> dict:
 
     # Handle groups if provider supports them
     groups_claim = provider_config.get("groups_claim")
-    logger.info(f"Looking for groups using claim: {groups_claim}")
+    logger.info(f"Looking for groups claim (configured={'yes' if groups_claim else 'no'})")
     logger.info(f"Available claims in user_info: {list(user_info.keys())}")
 
     if groups_claim and groups_claim in user_info:
@@ -2893,7 +2956,11 @@ async def oauth2_logout(
 
         # Detect provider type and build appropriate logout URL
         # Keycloak uses post_logout_redirect_uri, Cognito uses logout_uri
-        if "keycloak" in provider.lower() or "/realms/" in logout_url:
+        parsed_logout_url = urlparse(logout_url)
+        logout_hostname = parsed_logout_url.hostname or ""
+        logout_path = parsed_logout_url.path or ""
+
+        if "keycloak" in provider.lower() or "/realms/" in logout_path:
             # Keycloak logout parameters
             logout_params = {
                 "client_id": provider_config["client_id"],
@@ -2902,7 +2969,7 @@ async def oauth2_logout(
             if id_token_hint:
                 logout_params["id_token_hint"] = id_token_hint
             logger.debug(f"Keycloak logout params built: has_id_token_hint={bool(id_token_hint)}")
-        elif "login.microsoftonline.com" in logout_url or "entra" in provider.lower():
+        elif logout_hostname == "login.microsoftonline.com" or "entra" in provider.lower():
             # Entra ID logout parameters
             logout_params = {
                 "post_logout_redirect_uri": full_redirect_uri,
@@ -2910,7 +2977,9 @@ async def oauth2_logout(
             if id_token_hint:
                 logout_params["id_token_hint"] = id_token_hint
             logger.debug(f"Entra ID logout params built: has_id_token_hint={bool(id_token_hint)}")
-        elif "okta" in provider.lower() or ".okta.com" in logout_url:
+        elif "okta" in provider.lower() or (
+            logout_hostname and logout_hostname.endswith(".okta.com")
+        ):
             # Okta logout parameters
             logout_params = {
                 "post_logout_redirect_uri": full_redirect_uri,

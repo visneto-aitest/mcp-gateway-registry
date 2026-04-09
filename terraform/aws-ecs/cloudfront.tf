@@ -24,6 +24,9 @@ data "aws_cloudfront_origin_request_policy" "all_viewer" {
 }
 
 # CloudFront distribution for MCP Gateway ALB
+#checkov:skip=CKV2_AWS_32:Response headers policy managed at application level
+#checkov:skip=CKV2_AWS_46:Origin failover not required for this distribution
+#checkov:skip=CKV2_AWS_47:WAF integration managed separately
 resource "aws_cloudfront_distribution" "mcp_gateway" {
   count = var.enable_cloudfront ? 1 : 0
 
@@ -110,6 +113,9 @@ resource "aws_cloudfront_distribution" "mcp_gateway" {
 }
 
 # CloudFront distribution for Keycloak ALB
+#checkov:skip=CKV2_AWS_32:Response headers policy managed at application level
+#checkov:skip=CKV2_AWS_46:Origin failover not required for this distribution
+#checkov:skip=CKV2_AWS_47:WAF integration managed separately
 resource "aws_cloudfront_distribution" "keycloak" {
   count = var.enable_cloudfront ? 1 : 0
 

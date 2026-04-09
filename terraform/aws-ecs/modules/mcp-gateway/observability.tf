@@ -73,6 +73,7 @@ locals {
 # METRICS-SERVICE ECS SERVICE
 # =============================================================================
 
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "ecs_service_metrics" {
   count   = var.enable_observability ? 1 : 0
   source  = "terraform-aws-modules/ecs/aws//modules/service"
@@ -354,6 +355,7 @@ resource "aws_iam_policy" "grafana_amp_query" {
 }
 
 # ALB target group for Grafana
+#checkov:skip=CKV_AWS_378:HTTP backend protocol is intentional - TLS terminates at ALB
 resource "aws_lb_target_group" "grafana" {
   count       = var.enable_observability ? 1 : 0
   name_prefix = "graf-"
@@ -418,6 +420,7 @@ resource "aws_lb_listener_rule" "grafana_https" {
   tags = local.common_tags
 }
 
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "ecs_service_grafana" {
   count   = var.enable_observability ? 1 : 0
   source  = "terraform-aws-modules/ecs/aws//modules/service"

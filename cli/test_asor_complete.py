@@ -52,7 +52,8 @@ def get_token():
         if response.status_code == 200:
             tokens = response.json()
             access_token = tokens.get("access_token")
-            print(f"✅ Token obtained: {access_token}")
+            masked_token = f"{access_token[:8]}..." if access_token and len(access_token) > 8 else "***"
+            print(f"✅ Token obtained: {masked_token}")
             return access_token
         else:
             print(f"❌ Token exchange failed: {response.status_code} - {response.text}")
@@ -153,7 +154,7 @@ def main():
     print('  "auth_type": "oauth_3lo",')
     print('  "oauth_config": {')
     print(f'    "client_id": "{CLIENT_ID}",')
-    print(f'    "client_secret": "{CLIENT_SECRET}",')
+    print('    "client_secret": "***REDACTED***",')
     print(f'    "auth_url": "https://wcpdev.wd103.myworkday.com/{TENANT_NAME}/authorize",')
     print(f'    "token_url": "https://{HOSTNAME}/ccx/oauth2/{TENANT_NAME}/token",')
     print('    "scope": "Agent System of Record"')

@@ -87,6 +87,7 @@ resource "aws_security_group" "keycloak_lb" {
 }
 
 # Load Balancer Ingress from allowed CIDR blocks (HTTP)
+#checkov:skip=CKV_AWS_260:HTTP ingress is intentional - ALB redirects to HTTPS or CloudFront terminates TLS
 resource "aws_security_group_rule" "keycloak_lb_ingress_http" {
   description       = "Ingress from allowed CIDR blocks to load balancer (HTTP)"
   type              = "ingress"

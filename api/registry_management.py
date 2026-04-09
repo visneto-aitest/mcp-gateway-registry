@@ -2836,7 +2836,7 @@ def cmd_user_create_m2m(args: argparse.Namespace) -> int:
 
         logger.info("M2M account created successfully\n")
         print(f"Client ID: {result.client_id}")
-        print(f"Client Secret: {result.client_secret}")
+        print(f"Client Secret: {result.client_secret[:8]}...{result.client_secret[-4:]}")
         print(f"Groups: {', '.join(result.groups)}")
         if result.service_principal_id:
             print(f"Service Principal ID: {result.service_principal_id}")

@@ -214,15 +214,11 @@ class SecretsManager:
         api_key = self.secrets.get(client_id)
 
         if api_key:
-            # Redact the API key for security - show only first 4 and last 4 characters
-            redacted_key = (
-                f"{api_key[:4]}...{api_key[-4:]}" if len(api_key) > 8 else "***REDACTED***"
-            )
-            logger.info(f"API key found for client_id: {client_id} (key: {redacted_key})")
+            logger.info(f"API key found for client_id: {client_id}")
             logger.debug(f"API key length for {client_id}: {len(api_key)} characters")
         else:
             logger.warning(f"No API key found for client_id: {client_id}")
-            logger.debug(f"Available client IDs: {list(self.secrets.keys())}")
+            logger.debug(f"Number of available client IDs: {len(self.secrets)}")
 
         return api_key
 

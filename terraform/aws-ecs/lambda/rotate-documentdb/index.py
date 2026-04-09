@@ -137,7 +137,7 @@ def _set_secret(arn: str, token: str) -> None:
             cluster_id = f"{parts[0]}-registry"
             logger.info(f"Derived cluster_id: {cluster_id}")
         else:
-            error_msg = f"Cannot determine DocumentDB cluster ID from secret: {secret_name}"
+            error_msg = "Cannot determine DocumentDB cluster ID from secret name structure"
             logger.error(error_msg)
             raise ValueError(error_msg)
 
@@ -183,7 +183,7 @@ def _test_secret(arn: str, token: str) -> None:
         if len(parts) >= 2:
             cluster_id = f"{parts[0]}-registry"
         else:
-            error_msg = f"Cannot determine DocumentDB cluster ID from secret: {secret_name}"
+            error_msg = "Cannot determine DocumentDB cluster ID from secret name structure"
             logger.error(error_msg)
             raise ValueError(error_msg)
 
@@ -224,7 +224,7 @@ def _finish_secret(arn: str, token: str) -> None:
             current_version = version_id
             break
 
-    logger.info(f"Current version: {current_version}, New version: {token}")
+    logger.info("Promoting AWSPENDING to AWSCURRENT")
 
     secretsmanager.update_secret_version_stage(
         SecretId=arn,

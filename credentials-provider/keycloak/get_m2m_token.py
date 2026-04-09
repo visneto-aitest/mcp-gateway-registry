@@ -42,19 +42,19 @@ class TokenGenerator:
     def log(self, message: str):
         """Log info message if verbose mode is enabled"""
         if self.verbose:
-            print(f"{Colors.BLUE}[INFO]{Colors.NC} {message}")
+            self.logger.debug(message)
 
     def error(self, message: str):
         """Print error message"""
-        print(f"{Colors.RED}[ERROR]{Colors.NC} {message}", file=sys.stderr)
+        self.logger.error(message)
 
     def success(self, message: str):
         """Print success message"""
-        print(f"{Colors.GREEN}[SUCCESS]{Colors.NC} {message}")
+        self.logger.info(message)
 
     def warning(self, message: str):
         """Print warning message"""
-        print(f"{Colors.YELLOW}[WARNING]{Colors.NC} {message}")
+        self.logger.warning(message)
 
     def load_agent_config(self, agent_name: str, oauth_tokens_dir: str) -> dict[str, Any] | None:
         """Load agent configuration from JSON file"""
@@ -110,7 +110,7 @@ class TokenGenerator:
             # Validate access token exists
             if "access_token" not in token_data:
                 self.error("No access token in response")
-                self.log(f"Response: {token_data}")
+                self.log(f"Response keys: {list(token_data.keys())}")
                 return None
 
             return token_data
@@ -146,18 +146,19 @@ class TokenGenerator:
             expiry_timestamp = datetime.now(UTC).timestamp() + expires_in
             expires_at = datetime.fromtimestamp(expiry_timestamp, UTC).isoformat()
 
-        # Save .env file
+        # Save .env file with restricted permissions (contains secrets)
         env_file = os.path.join(oauth_tokens_dir, f"{agent_name}.env")
         try:
-            with open(env_file, "w") as f:
+            with open(env_file, "w") as f:  # nosec - intentional credential storage for CLI token cache
                 f.write(f"# Generated access token for {agent_name}\n")
                 f.write(f"# Generated at: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
-                f.write(f'export ACCESS_TOKEN="{access_token}"\n')
+                f.write(f'export ACCESS_TOKEN="{access_token}"\n')  # nosec - intentional token storage in secured file
                 f.write(f'export CLIENT_ID="{client_id}"\n')
-                f.write(f'export CLIENT_SECRET="{client_secret}"\n')
+                f.write(f'export CLIENT_SECRET="{client_secret}"\n')  # nosec - intentional credential storage in secured file
                 f.write(f'export KEYCLOAK_URL="{keycloak_url}"\n')
                 f.write(f'export KEYCLOAK_REALM="{realm}"\n')
                 f.write('export AUTH_PROVIDER="keycloak"\n')
+            os.chmod(env_file, 0o600)  # Restrict file permissions to owner only
         except Exception as e:
             self.error(f"Failed to save .env file: {e}")
             return False
@@ -187,6 +188,7 @@ class TokenGenerator:
         try:
             with open(json_file, "w") as f:
                 json.dump(token_json, f, indent=2)
+            os.chmod(json_file, 0o600)  # Restrict file permissions to owner only
         except Exception as e:
             self.error(f"Failed to save JSON file: {e}")
             return False
@@ -214,13 +216,12 @@ class TokenGenerator:
                     return value[:show_chars] + "*" * (len(value) - show_chars)
 
         redacted_token = redact_sensitive_value(access_token, 8)
-        print(f"\nAccess Token: {redacted_token}")
+        self.logger.info(f"Access Token: {redacted_token}")
         if expires_in:
-            print(f"Expires in: {expires_in} seconds")
+            self.logger.info(f"Expires in: {expires_in} seconds")
             if expires_at:
                 expiry_time = datetime.fromisoformat(expires_at.replace("Z", "+00:00"))
-                print(f"Expires at: {expiry_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
-        print()
+                self.logger.info(f"Expires at: {expiry_time.strftime('%Y-%m-%d %H:%M:%S UTC')}")
 
         return True
 
@@ -273,7 +274,7 @@ class TokenGenerator:
             self.error("KEYCLOAK_URL is required. Provide via --keycloak-url or in config file.")
             return False
 
-        print(f"Requesting access token for agent: {agent_name}")
+        self.logger.info(f"Requesting access token for agent: {agent_name}")
 
         # Get token from Keycloak
         token_data = self.get_token_from_keycloak(client_id, client_secret, keycloak_url, realm)
@@ -333,9 +334,9 @@ class TokenGenerator:
         total_count = len(agent_configs)
 
         for agent_name in agent_configs:
-            print(f"\n{'=' * 60}")
-            print(f"Processing agent: {agent_name}")
-            print("=" * 60)
+            self.logger.info("=" * 60)
+            self.logger.info(f"Processing agent: {agent_name}")
+            self.logger.info("=" * 60)
 
             try:
                 if self.generate_token_for_agent(
@@ -350,9 +351,9 @@ class TokenGenerator:
             except Exception as e:
                 self.error(f"Exception while processing agent {agent_name}: {e}")
 
-        print(f"\n{'=' * 60}")
-        print(f"Token generation complete: {success_count}/{total_count} successful")
-        print("=" * 60)
+        self.logger.info("=" * 60)
+        self.logger.info(f"Token generation complete: {success_count}/{total_count} successful")
+        self.logger.info("=" * 60)
 
         return success_count == total_count
 

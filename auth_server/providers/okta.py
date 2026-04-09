@@ -322,7 +322,7 @@ class OktaProvider(AuthProvider):
 
         for attempt in range(max_retries):
             try:
-                logger.debug(f"Fetching JWKS from {self.jwks_url} (attempt {attempt + 1})")
+                logger.debug(f"Fetching JWKS (attempt {attempt + 1})")
                 response = requests.get(self.jwks_url, timeout=10)
                 response.raise_for_status()
 
@@ -430,7 +430,7 @@ class OktaProvider(AuthProvider):
             "state": state,
         }
         auth_url = f"{self.auth_url}?{urlencode(params)}"
-        logger.debug(f"Generated auth URL: {auth_url}")
+        logger.debug(f"Generated auth URL for endpoint: {self.auth_url}")
         return auth_url
 
     def get_logout_url(self, redirect_uri: str) -> str:
@@ -450,7 +450,7 @@ class OktaProvider(AuthProvider):
         }
 
         logout_url = f"{self.logout_url}?{urlencode(params)}"
-        logger.debug(f"Generated logout URL: {logout_url}")
+        logger.debug(f"Generated logout URL for endpoint: {self.logout_url}")
 
         return logout_url
 

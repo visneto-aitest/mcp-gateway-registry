@@ -1,6 +1,11 @@
 import hashlib
+import hmac
 import secrets
 from datetime import datetime
+
+# Application-level key for HMAC-based API key hashing.
+# This adds a layer of domain separation beyond plain SHA-256.
+_HASH_KEY: bytes = b"mcp-gateway-metrics-api-key-v1"
 
 
 def generate_api_key() -> str:
@@ -9,8 +14,8 @@ def generate_api_key() -> str:
 
 
 def hash_api_key(api_key: str) -> str:
-    """Hash API key for storage."""
-    return hashlib.sha256(api_key.encode()).hexdigest()
+    """Hash API key for storage using HMAC-SHA256."""
+    return hmac.new(_HASH_KEY, api_key.encode(), hashlib.sha256).hexdigest()
 
 
 def generate_request_id() -> str:

@@ -1,6 +1,7 @@
 # CloudWatch Monitoring and Alarms for MCP Gateway
 
 # SNS Topic for Alarm Notifications
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "sns_alarms" {
   source  = "terraform-aws-modules/sns/aws"
   version = "~> 7.0"

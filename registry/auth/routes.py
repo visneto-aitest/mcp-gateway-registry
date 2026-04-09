@@ -132,15 +132,17 @@ async def oauth2_callback(request: Request, error: str = None, details: str = No
             logger.warning(f"OAuth2 callback received error: {error}, details: {details}")
             error_message = "Authentication failed"
             if error == "oauth2_error":
-                error_message = f"OAuth2 provider error: {details}"
+                # Sanitize user-supplied details to prevent injection
+                safe_details = re.sub(r"[^\w\s.:-]", "", str(details or ""))[:200]
+                error_message = f"OAuth2 provider error: {safe_details}"
             elif error == "oauth2_init_failed":
                 error_message = "Failed to initiate OAuth2 login"
             elif error == "oauth2_callback_failed":
                 error_message = "OAuth2 authentication failed"
 
-            return RedirectResponse(
-                url=f"/login?error={urllib.parse.quote(error_message)}", status_code=302
-            )
+            # Redirect to /login with URL-encoded error message (safe relative URL)
+            safe_redirect = f"/login?error={urllib.parse.quote(error_message)}"
+            return RedirectResponse(url=safe_redirect, status_code=302)
 
         # If we reach here, the auth server should have set the session cookie
         # Verify the session is valid by checking the cookie

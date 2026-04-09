@@ -145,7 +145,7 @@ async def api_discover_agents(query: str):
         }
     except Exception as e:
         logger.error(f"Discovery failed: {e}", exc_info=True)
-        return {"error": str(e)}
+        return {"error": "An internal error occurred during agent discovery"}
 
 
 app.mount("/", a2a_server.to_fastapi_app())

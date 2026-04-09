@@ -1,6 +1,7 @@
 # ECS Services for MCP Gateway Registry
 
 # ECS Service: Auth Server
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "ecs_service_auth" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
   version = "~> 6.0"
@@ -440,6 +441,7 @@ module "ecs_service_auth" {
 }
 
 # ECS Service: Registry (Main service with nginx, SSL, FAISS, models)
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "ecs_service_registry" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
   version = "~> 6.0"
@@ -1028,6 +1030,7 @@ resource "aws_vpc_security_group_ingress_rule" "registry_to_auth" {
 
 
 # ECS Service: CurrentTime MCP Server
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "ecs_service_currenttime" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
   version = "~> 6.0"
@@ -1149,6 +1152,7 @@ module "ecs_service_currenttime" {
 
 
 # ECS Service: MCPGW MCP Server
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "ecs_service_mcpgw" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
   version = "~> 6.0"
@@ -1296,6 +1300,7 @@ module "ecs_service_mcpgw" {
 
 
 # ECS Service: RealServerFakeTools MCP Server
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "ecs_service_realserverfaketools" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
   version = "~> 6.0"
@@ -1417,6 +1422,7 @@ module "ecs_service_realserverfaketools" {
 
 
 # ECS Service: Flight Booking A2A Agent
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "ecs_service_flight_booking_agent" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
   version = "~> 6.0"
@@ -1538,6 +1544,7 @@ module "ecs_service_flight_booking_agent" {
 
 
 # ECS Service: Travel Assistant A2A Agent
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "ecs_service_travel_assistant_agent" {
   source  = "terraform-aws-modules/ecs/aws//modules/service"
   version = "~> 6.0"

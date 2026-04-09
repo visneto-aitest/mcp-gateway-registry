@@ -202,6 +202,7 @@ resource "aws_kms_alias" "documentdb" {
 #
 # Secrets Manager Secret for DocumentDB Credentials
 #
+#checkov:skip=CKV2_AWS_57:Secret rotation managed externally via dedicated rotation Lambda
 resource "aws_secretsmanager_secret" "documentdb_credentials" {
   name                    = "${var.name}/documentdb/credentials"
   description             = "DocumentDB Cluster admin credentials"
@@ -379,6 +380,7 @@ resource "aws_docdb_cluster_instance" "registry_primary" {
 #
 # Update SSM Parameters with new cluster endpoints
 #
+#checkov:skip=CKV2_AWS_34:SSM parameter stores non-sensitive endpoint hostname, SecureString not required
 resource "aws_ssm_parameter" "documentdb_endpoint" {
   name        = "/${var.name}/documentdb/endpoint"
   description = "DocumentDB Cluster endpoint"
@@ -394,6 +396,7 @@ resource "aws_ssm_parameter" "documentdb_endpoint" {
   )
 }
 
+#checkov:skip=CKV2_AWS_34:SSM parameter stores non-sensitive endpoint hostname, SecureString not required
 resource "aws_ssm_parameter" "documentdb_reader_endpoint" {
   name        = "/${var.name}/documentdb/reader_endpoint"
   description = "DocumentDB Cluster reader endpoint"

@@ -48,8 +48,8 @@ def main():
             # Try to load the encrypted file
             secrets_manager = SecretsManager(args.input_file)
             client_ids = secrets_manager.get_all_client_ids()
-            print(f"✅ Successfully decrypted and loaded {len(client_ids)} client configurations")
-            print(f"Client IDs: {client_ids}")
+            print(f"Successfully decrypted and loaded {len(client_ids)} client configurations")
+            print(f"Number of client IDs loaded: {len(client_ids)}")
         except Exception as e:
             print(f"❌ Failed to decrypt file: {e}")
             sys.exit(1)

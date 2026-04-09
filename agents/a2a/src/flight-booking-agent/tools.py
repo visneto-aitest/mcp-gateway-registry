@@ -33,8 +33,8 @@ def check_availability(
         return json.dumps(availability, indent=2)
 
     except Exception as e:
-        logger.error(f"Database error in check_availability: {e}")
-        return json.dumps({"error": f"Database error: {str(e)}"})
+        logger.exception(f"Database error in check_availability: {e}")
+        return json.dumps({"error": "An internal database error occurred"})
 
 
 @tool
@@ -53,10 +53,10 @@ def reserve_flight(
 
     except ValueError as e:
         logger.warning(f"Validation error in reserve_flight: {e}")
-        return json.dumps({"error": str(e)})
+        return json.dumps({"error": "Invalid reservation parameters"})
     except Exception as e:
-        logger.error(f"Database error in reserve_flight: {e}")
-        return json.dumps({"error": f"Database error: {str(e)}"})
+        logger.exception(f"Database error in reserve_flight: {e}")
+        return json.dumps({"error": "An internal database error occurred"})
 
 
 @tool
@@ -72,10 +72,10 @@ def confirm_booking(
 
     except ValueError as e:
         logger.warning(f"Validation error in confirm_booking: {e}")
-        return json.dumps({"error": str(e)})
+        return json.dumps({"error": "Invalid booking confirmation parameters"})
     except Exception as e:
-        logger.error(f"Database error in confirm_booking: {e}")
-        return json.dumps({"error": f"Database error: {str(e)}"})
+        logger.exception(f"Database error in confirm_booking: {e}")
+        return json.dumps({"error": "An internal database error occurred"})
 
 
 @tool
@@ -96,10 +96,10 @@ def process_payment(
 
     except ValueError as e:
         logger.warning(f"Validation error in process_payment: {e}")
-        return json.dumps({"error": str(e)})
+        return json.dumps({"error": "Invalid payment parameters"})
     except Exception as e:
-        logger.error(f"Database error in process_payment: {e}")
-        return json.dumps({"error": f"Database error: {str(e)}"})
+        logger.exception(f"Database error in process_payment: {e}")
+        return json.dumps({"error": "An internal database error occurred"})
 
 
 @tool
@@ -137,10 +137,10 @@ def manage_reservation(
 
     except ValueError as e:
         logger.warning(f"Validation error in manage_reservation: {e}")
-        return json.dumps({"error": str(e)})
+        return json.dumps({"error": "Invalid reservation parameters"})
     except Exception as e:
-        logger.error(f"Database error in manage_reservation: {e}")
-        return json.dumps({"error": f"Database error: {str(e)}"})
+        logger.exception(f"Database error in manage_reservation: {e}")
+        return json.dumps({"error": "An internal database error occurred"})
 
 
 # TODO: Create tool that's able to dynamically search agents from MCP Registry

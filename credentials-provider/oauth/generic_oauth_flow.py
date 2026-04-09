@@ -918,8 +918,8 @@ def interactive_scopes_input(provider_config: dict[str, Any]) -> list[str]:
     """Interactive scopes selection."""
     default_scopes = provider_config.get("scopes", [])
 
-    print("\n📋 OAuth Scopes")
-    print(f"Default scopes: {', '.join(default_scopes)}")
+    print("\nOAuth Scopes")
+    logger.info(f"Default scopes: {', '.join(default_scopes)}")
 
     custom_input = input(
         "Enter custom scopes (comma or space-separated) or press Enter for defaults: "
@@ -1485,10 +1485,11 @@ Supported providers: """
             if not value:
                 if use_interactive:
                     logger.error(
-                        f"{var_name} configuration was not completed properly for {provider}"
+                        f"'{var_name}' configuration was not completed properly for provider '{provider}'"
                     )
                 else:
-                    logger.error(f"{var_name} is required for {provider_config['display_name']}")
+                    display_name = str(provider_config.get('display_name', provider))
+                    logger.error(f"'{var_name}' is required for {display_name}")
                     logger.error(
                         f"Set {var_name.upper()} environment variable or add '{var_name}' to config file"
                     )
@@ -1526,8 +1527,9 @@ Supported providers: """
 
     # Check for critical scopes (generic check for offline_access)
     if "offline_access" in provider_config.get("scopes", []) and "offline_access" not in scopes:
+        display_name = str(provider_config.get('display_name', provider))
         logger.warning(
-            f"⚠️  WARNING: 'offline_access' scope is recommended for {provider_config['display_name']}!"
+            f"WARNING: 'offline_access' scope is recommended for {display_name}!"
         )
         logger.warning("Without this scope, refresh tokens may not be issued.")
 
@@ -1543,16 +1545,17 @@ Supported providers: """
     success = run_oauth_flow(oauth_config, force_new=args.force)
 
     # Output token data as JSON if successful (for integration with other scripts)
+    # This stdout output is consumed by egress_oauth.py and other scripts in the pipeline
     if success and oauth_config.access_token:
         token_output = {
             "provider": oauth_config.provider,
-            "access_token": oauth_config.access_token,
+            "access_token": oauth_config.access_token,  # nosec - intentional stdout output for script integration
             "refresh_token": oauth_config.refresh_token,
             "expires_at": oauth_config.expires_at,
             "cloud_id": oauth_config.cloud_id,
             "scopes": oauth_config.scopes,
         }
-        print(json.dumps(token_output))
+        print(json.dumps(token_output))  # noqa: T201 - intentional stdout for script piping
 
     return 0 if success else 1
 

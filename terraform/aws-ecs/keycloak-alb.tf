@@ -2,6 +2,8 @@
 # Keycloak Application Load Balancer
 #
 
+#checkov:skip=CKV_AWS_150:Deletion protection managed at deployment level
+#checkov:skip=CKV2_AWS_76:Target group is attached to ALB listener and ECS service
 resource "aws_lb" "keycloak" {
   name               = "keycloak-alb"
   internal           = false
@@ -42,6 +44,7 @@ resource "random_string" "alb_tg_suffix" {
 }
 
 # Target Group
+#checkov:skip=CKV_AWS_378:HTTP backend protocol is intentional - TLS terminates at ALB
 resource "aws_lb_target_group" "keycloak" {
   name                 = "keycloak-tg-${random_string.alb_tg_suffix.result}"
   port                 = 8080

@@ -200,6 +200,8 @@ def _get_client_secret(
     secret = os.environ.get(vendor_env_var)
     if not secret:
         logger.warning(f"Env var {vendor_env_var} not set for {idp_vendor}")
+    else:
+        logger.debug(f"Using client secret from vendor env var {vendor_env_var}")
     return secret
 
 

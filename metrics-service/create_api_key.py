@@ -29,11 +29,16 @@ async def create_api_key_for_service(service_name: str):
     success = await storage.create_api_key(key_hash, service_name)
 
     if success:
+        masked_key = f"{api_key[:12]}...{api_key[-4:]}" if len(api_key) > 16 else "***"
         print(f"API Key created for service '{service_name}':")
-        print(f"API Key: {api_key}")
+        print(f"API Key (masked): {masked_key}")
         print(f"Hash: {key_hash}")
-        print("\nAdd this to your service's environment:")
-        print(f"METRICS_API_KEY={api_key}")
+
+        # Write full key to a file so it is not logged in plain text
+        key_file = Path(f".api_key_{service_name}.txt")
+        key_file.write_text(f"METRICS_API_KEY={api_key}\n")
+        print(f"\nFull API key written to: {key_file}")
+        print("Store the key securely and delete the file after use.")
         return api_key
     else:
         print(f"Failed to create API key for service '{service_name}'")
