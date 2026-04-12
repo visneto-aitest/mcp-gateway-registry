@@ -8,6 +8,7 @@ token validation, JWKS handling, OAuth2 flows, and M2M authentication.
 import logging
 import time
 from unittest.mock import MagicMock, patch
+from urllib.parse import urlparse
 
 import jwt
 import pytest
@@ -63,9 +64,9 @@ class TestKeycloakProviderInit:
         assert provider.keycloak_url == "http://keycloak:8080"
         assert provider.keycloak_external_url == "https://keycloak.example.com"
         # Auth URL should use external URL
-        assert "keycloak.example.com" in provider.auth_url
+        assert urlparse(provider.auth_url).hostname == "keycloak.example.com"
         # Token URL should use internal URL
-        assert "keycloak:8080" in provider.token_url
+        assert urlparse(provider.token_url).hostname == "keycloak"
 
     def test_provider_initialization_removes_trailing_slashes(self):
         """Test that trailing slashes are removed from URLs."""

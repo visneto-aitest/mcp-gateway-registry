@@ -54,7 +54,7 @@ def _load_json_file(file_path: Path) -> dict[str, Any] | None:
         with open(file_path, encoding="utf-8") as f:
             return json.load(f)
     except (FileNotFoundError, json.JSONDecodeError) as e:
-        logger.error(f"Failed to load {file_path}: {e}")
+        logger.error(f"Failed to load {file_path}: {type(e).__name__}")
         return None
 
 
@@ -64,9 +64,9 @@ def _save_json_file(file_path: Path, data: dict[str, Any], description: str) -> 
         with open(file_path, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2, ensure_ascii=False)
         os.chmod(file_path, 0o600)
-        logger.info(f"✅ Updated {description}: {file_path}")
+        logger.info(f"Updated {description}: {file_path}")
     except Exception as e:
-        logger.error(f"Failed to save {description} to {file_path}: {e}")
+        logger.error(f"Failed to save {description} to {file_path}: {type(e).__name__}")
 
 
 def _get_registry_servers_dir() -> Path:
@@ -214,7 +214,7 @@ def _update_vscode_config(
             server_config["headers"] = ingress_headers.copy()
 
         config["mcp"]["servers"][server_key] = server_config
-        logger.info(f"Added {server_key} to VS Code config: {service_url}")
+        logger.info(f"Added {server_key} to VS Code config")
 
     _save_json_file(vscode_file, config, "VS Code MCP configuration")
 
@@ -268,7 +268,7 @@ def _update_roocode_config(
             server_config["headers"] = ingress_headers.copy()
 
         config["mcpServers"][server_key] = server_config
-        logger.info(f"Added {server_key} to Roocode config: {service_url} ({transport_type})")
+        logger.info(f"Added {server_key} to Roocode config ({transport_type})")
 
     _save_json_file(roocode_file, config, "Roocode MCP configuration")
 

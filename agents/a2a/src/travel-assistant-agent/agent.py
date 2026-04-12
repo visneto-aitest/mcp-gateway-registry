@@ -40,8 +40,8 @@ def search_flights(
         return json.dumps(result, indent=2)
 
     except Exception as e:
-        logger.error(f"Database error in search_flights: {e}")
-        return json.dumps({"error": f"Database error: {str(e)}"})
+        logger.exception(f"Database error in search_flights: {e}")
+        return json.dumps({"error": "An internal database error occurred"})
 
 
 @tool
@@ -62,8 +62,8 @@ def check_prices(
         return json.dumps(flight_details, indent=2)
 
     except Exception as e:
-        logger.error(f"Database error in check_prices: {e}")
-        return json.dumps({"error": f"Database error: {str(e)}"})
+        logger.exception(f"Database error in check_prices: {e}")
+        return json.dumps({"error": "An internal database error occurred"})
 
 
 @tool
@@ -88,8 +88,8 @@ def get_recommendations(
         return json.dumps(result, indent=2)
 
     except Exception as e:
-        logger.error(f"Database error in get_recommendations: {e}")
-        return json.dumps({"error": f"Database error: {str(e)}"})
+        logger.exception(f"Database error in get_recommendations: {e}")
+        return json.dumps({"error": "An internal database error occurred"})
 
 
 @tool
@@ -141,8 +141,8 @@ def create_trip_plan(
         return json.dumps(result, indent=2)
 
     except Exception as e:
-        logger.error(f"Database error in create_trip_plan: {e}")
-        return json.dumps({"error": f"Database error: {str(e)}"})
+        logger.exception(f"Database error in create_trip_plan: {e}")
+        return json.dumps({"error": "An internal database error occurred"})
 
 
 @tool
@@ -217,7 +217,7 @@ async def discover_remote_agents(query: str, max_results: int = 5) -> str:
         return json.dumps(
             {
                 "error": "Discovery failed",
-                "message": str(e),
+                "message": "An internal error occurred during agent discovery",
             }
         )
 
@@ -261,7 +261,7 @@ async def view_cached_remote_agents() -> str:
         return json.dumps(
             {
                 "error": "Failed to view cached agents",
-                "message": str(e),
+                "message": "An internal error occurred while viewing cached agents",
             }
         )
 
@@ -302,7 +302,7 @@ async def invoke_remote_agent(agent_id: str, message: str) -> str:
             {
                 "error": "Failed to invoke remote agent",
                 "agent_id": agent_id,
-                "message": str(e),
+                "message": "An internal error occurred while invoking the remote agent",
             }
         )
 

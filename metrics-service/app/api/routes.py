@@ -48,8 +48,8 @@ async def collect_metrics(
         )
 
     except Exception as e:
-        logger.error(f"Error processing metrics: {e}")
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        logger.exception("Error processing metrics")
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
 @router.post("/flush")
@@ -68,8 +68,8 @@ async def flush_metrics(
         await processor.force_flush()
         return {"status": "success", "message": "Metrics flushed to storage"}
     except Exception as e:
-        logger.error(f"Error flushing metrics: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to flush metrics: {str(e)}")
+        logger.exception("Error flushing metrics")
+        raise HTTPException(status_code=500, detail="Failed to flush metrics")
 
 
 @router.get("/rate-limit")
@@ -84,8 +84,8 @@ async def get_rate_limit(request: Request):
         status = await get_rate_limit_status(api_key)
         return status
     except Exception as e:
-        logger.error(f"Error getting rate limit status: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get rate limit status: {str(e)}")
+        logger.exception("Error getting rate limit status")
+        raise HTTPException(status_code=500, detail="Failed to get rate limit status")
 
 
 @router.get("/admin/retention/preview")
@@ -115,8 +115,8 @@ async def get_cleanup_preview(
         logger.warning(f"Table not found in cleanup preview request: {e}")
         raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
-        logger.error(f"Error getting cleanup preview: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get cleanup preview: {str(e)}")
+        logger.exception("Error getting cleanup preview")
+        raise HTTPException(status_code=500, detail="Failed to get cleanup preview")
 
 
 @router.post("/admin/retention/cleanup")
@@ -145,8 +145,8 @@ async def run_cleanup(
         logger.warning(f"Invalid table name in cleanup request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error running cleanup: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to run cleanup: {str(e)}")
+        logger.exception("Error running cleanup")
+        raise HTTPException(status_code=500, detail="Failed to run cleanup")
 
 
 @router.get("/admin/retention/policies")
@@ -163,8 +163,8 @@ async def get_retention_policies(api_key: str = Depends(verify_api_key)):
             }
         return policies
     except Exception as e:
-        logger.error(f"Error getting retention policies: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get retention policies: {str(e)}")
+        logger.exception("Error getting retention policies")
+        raise HTTPException(status_code=500, detail="Failed to get retention policies")
 
 
 @router.put("/admin/retention/policies/{table_name}")
@@ -200,8 +200,8 @@ async def update_retention_policy(
         logger.warning(f"Invalid table name in update policy request: {e}")
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
-        logger.error(f"Error updating retention policy: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to update retention policy: {str(e)}")
+        logger.exception("Error updating retention policy")
+        raise HTTPException(status_code=500, detail="Failed to update retention policy")
 
 
 @router.get("/admin/database/stats")
@@ -211,8 +211,8 @@ async def get_database_stats(api_key: str = Depends(verify_api_key)):
         stats = await retention_manager.get_table_stats()
         return stats
     except Exception as e:
-        logger.error(f"Error getting database stats: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get database stats: {str(e)}")
+        logger.exception("Error getting database stats")
+        raise HTTPException(status_code=500, detail="Failed to get database stats")
 
 
 @router.get("/admin/database/size")
@@ -222,5 +222,5 @@ async def get_database_size(api_key: str = Depends(verify_api_key)):
         size_info = await retention_manager.get_database_size()
         return size_info
     except Exception as e:
-        logger.error(f"Error getting database size: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to get database size: {str(e)}")
+        logger.exception("Error getting database size")
+        raise HTTPException(status_code=500, detail="Failed to get database size")

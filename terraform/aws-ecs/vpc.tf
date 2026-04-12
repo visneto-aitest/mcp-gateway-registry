@@ -14,6 +14,7 @@ locals {
   gateway_endpoint_prefix   = "com.amazonaws"
 }
 
+#checkov:skip=CKV_TF_1:Module version is pinned via version constraint
 module "vpc" {
   source  = "terraform-aws-modules/vpc/aws"
   version = "~> 6.0"
@@ -66,13 +67,21 @@ resource "aws_vpc_endpoint" "s3" {
 # Security group for VPC endpoints
 resource "aws_security_group" "vpc_endpoints" {
   name        = "${var.name}-vpc-endpoints"
-  description = "Security group for VPC endpoints"
+  description = "Security group for VPC interface endpoints allowing HTTPS from within VPC"
   vpc_id      = module.vpc.vpc_id
 
   ingress {
+    description = "Allow HTTPS from VPC CIDR for AWS service endpoints"
     from_port   = 443
     to_port     = 443
     protocol    = "tcp"
     cidr_blocks = [module.vpc.vpc_cidr_block]
   }
+
+  tags = merge(
+    local.common_tags,
+    {
+      Name = "${var.name}-vpc-endpoints"
+    }
+  )
 }

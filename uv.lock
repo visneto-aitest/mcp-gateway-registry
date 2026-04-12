@@ -1,5 +1,5 @@
 version = 1
-revision = 3
+revision = 2
 requires-python = ">=3.11, <3.14"
 resolution-markers = [
     "python_full_version >= '3.13'",
@@ -1951,6 +1951,7 @@ dependencies = [
     { name = "jinja2" },
     { name = "langchain-anthropic" },
     { name = "langchain-aws" },
+    { name = "langchain-core" },
     { name = "langchain-mcp-adapters" },
     { name = "langgraph" },
     { name = "litellm" },
@@ -2026,7 +2027,7 @@ requires-dist = [
     { name = "cisco-ai-mcp-scanner", specifier = ">=3.0.1" },
     { name = "cisco-ai-skill-scanner", specifier = ">=1.0.0" },
     { name = "coverage", extras = ["toml"], marker = "extra == 'dev'", specifier = ">=7.4.0" },
-    { name = "cryptography", specifier = ">=46.0.3" },
+    { name = "cryptography", specifier = ">=46.0.7" },
     { name = "dnspython", specifier = ">=2.4.0" },
     { name = "email-validator", specifier = ">=2.2.0" },
     { name = "factory-boy", marker = "extra == 'dev'", specifier = ">=3.3.0" },
@@ -2043,6 +2044,7 @@ requires-dist = [
     { name = "jinja2", specifier = ">=3.1.6" },
     { name = "langchain-anthropic", specifier = ">=0.3.17" },
     { name = "langchain-aws", specifier = ">=0.2.23" },
+    { name = "langchain-core", specifier = ">=1.2.28" },
     { name = "langchain-mcp-adapters", specifier = ">=0.0.11" },
     { name = "langgraph", specifier = ">=0.4.3" },
     { name = "litellm", specifier = "==1.83.0" },
@@ -2057,7 +2059,7 @@ requires-dist = [
     { name = "psutil", specifier = ">=6.1.0" },
     { name = "pydantic", specifier = ">=2.11.3" },
     { name = "pydantic-settings", specifier = ">=2.0.0" },
-    { name = "pyjwt", specifier = ">=2.10.1" },
+    { name = "pyjwt", specifier = ">=2.12.0" },
     { name = "pymdown-extensions", marker = "extra == 'docs'", specifier = ">=10.0.0" },
     { name = "pymongo", specifier = ">=4.6.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0.0" },

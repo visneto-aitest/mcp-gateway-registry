@@ -126,7 +126,8 @@ class OktaM2MSync:
             List of group names for this client
         """
         groups = DEFAULT_CLIENT_GROUPS.get(client_id, [])
-        logger.debug(f"Client {client_id} assigned groups: {groups}")
+        masked_id = f"{client_id[:8]}..." if client_id else "<none>"
+        logger.debug(f"Client {masked_id} assigned groups: {groups}")
         return groups
 
     async def sync_from_okta(self, force_full_sync: bool = False) -> dict:
@@ -180,6 +181,8 @@ class OktaM2MSync:
                         "last_synced": datetime.utcnow(),
                     }
 
+                    masked_cid = f"{client_id[:8]}..." if client_id else "<none>"
+
                     if existing:
                         # Update existing record
                         client_doc["updated_at"] = datetime.utcnow()
@@ -187,14 +190,14 @@ class OktaM2MSync:
                             {"client_id": client_id}, {"$set": client_doc}
                         )
                         updated_count += 1
-                        logger.info(f"Updated client: {client_id}")
+                        logger.info(f"Updated client: {masked_cid}")
                     else:
                         # Insert new record
                         client_doc["created_at"] = datetime.utcnow()
                         client_doc["updated_at"] = datetime.utcnow()
                         await self.collection.insert_one(client_doc)
                         added_count += 1
-                        logger.info(f"Added new client: {client_id}")
+                        logger.info(f"Added new client: {masked_cid}")
 
                     # Also sync to generic idp_m2m_clients collection for groups enrichment
                     idp_doc = {

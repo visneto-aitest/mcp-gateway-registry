@@ -1351,8 +1351,8 @@ async def internal_healthcheck(
         return JSONResponse(status_code=200, content=health_data)
 
     except Exception as e:
-        logger.error(f"Failed to retrieve health status: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve health status: {str(e)}")
+        logger.exception("Failed to retrieve health status")
+        raise HTTPException(status_code=500, detail="Failed to retrieve health status")
 
 
 @router.get("/edit/{service_path:path}", response_class=HTMLResponse)
@@ -1823,7 +1823,7 @@ async def get_service_tools(
                 f"Error fetching live tools for {service_path}, falling back to cached tools: {e}"
             )
             return {"service_path": service_path, "tools": cached_tools, "cached": True}
-        raise HTTPException(status_code=500, detail=f"Error fetching tools: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error fetching tools")
 
 
 @router.post("/refresh/{service_path:path}")
@@ -1964,10 +1964,10 @@ async def _add_server_to_groups_impl(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error adding server {server_path} to groups {groups}: {e}")
+        logger.exception(f"Error adding server {server_path} to groups {groups}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal error: {str(e)}",
+            detail="Internal server error",
         )
 
 
@@ -2029,10 +2029,10 @@ async def _remove_server_from_groups_impl(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error removing server {server_path} from groups {groups}: {e}")
+        logger.exception(f"Error removing server {server_path} from groups {groups}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal error: {str(e)}",
+            detail="Internal server error",
         )
 
 
@@ -2178,7 +2178,7 @@ async def _list_groups_impl(
                 logger.info(f"Found {len(idp_groups)} groups in identity provider")
             except Exception as e:
                 logger.error(f"Failed to list identity provider groups: {e}")
-                result["keycloak_error"] = str(e)
+                result["keycloak_error"] = "Failed to list identity provider groups"
 
         # Get groups from scopes (file or OpenSearch based on STORAGE_BACKEND)
         scopes_group_names = set()
@@ -2190,7 +2190,7 @@ async def _list_groups_impl(
                 logger.info(f"Found {len(scopes_group_names)} groups in scopes")
             except Exception as e:
                 logger.error(f"Failed to list scopes groups: {e}")
-                result["scopes_error"] = str(e)
+                result["scopes_error"] = "Failed to list scopes groups"
 
         # Find synchronized and out-of-sync groups
         if include_idp and include_scopes:
@@ -2201,10 +2201,10 @@ async def _list_groups_impl(
         return JSONResponse(status_code=200, content=result)
 
     except Exception as e:
-        logger.error(f"Error listing groups: {e}")
+        logger.exception("Error listing groups")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal error: {str(e)}",
+            detail="Internal server error",
         )
 
 
@@ -2708,7 +2708,7 @@ async def register_service_api(
 
     except Exception as e:
         logger.error(f"Service registration failed for {path}: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Service registration failed: {str(e)}")
+        raise HTTPException(status_code=500, detail="Service registration failed")
 
 
 @router.patch("/servers/{server_path:path}/auth-credential")
@@ -3123,8 +3123,8 @@ async def healthcheck_api(
         return JSONResponse(status_code=200, content=health_data)
 
     except Exception as e:
-        logger.error(f"Failed to retrieve health status: {e}")
-        raise HTTPException(status_code=500, detail=f"Failed to retrieve health status: {str(e)}")
+        logger.exception("Failed to retrieve health status")
+        raise HTTPException(status_code=500, detail="Failed to retrieve health status")
 
 
 @router.post("/servers/groups/add")
@@ -3243,10 +3243,10 @@ async def _create_group_impl(
                     idp_created = True
                     logger.info(f"Group '{group_name}' created in IdP")
             except Exception as e:
-                logger.error(f"Failed to create group in IdP: {e}")
+                logger.exception("Failed to create group in IdP")
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Failed to create group in IdP: {str(e)}",
+                    detail="Failed to create group in IdP",
                 )
 
         # Create in scopes (file or OpenSearch based on STORAGE_BACKEND)
@@ -3271,10 +3271,10 @@ async def _create_group_impl(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error creating group '{group_name}': {e}")
+        logger.exception(f"Error creating group '{group_name}'")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal error: {str(e)}",
+            detail="Internal server error",
         )
 
 
@@ -3399,10 +3399,10 @@ async def _delete_group_impl(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error deleting group '{group_name}': {e}")
+        logger.exception(f"Error deleting group '{group_name}'")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal error: {str(e)}",
+            detail="Internal server error",
         )
 
 
@@ -3534,10 +3534,10 @@ async def get_group_api(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error getting group {group_name}: {e}")
+        logger.exception(f"Error getting group {group_name}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal error: {str(e)}",
+            detail="Internal server error",
         )
 
 
@@ -3696,10 +3696,10 @@ async def import_group_definition(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error importing group definition: {e}")
+        logger.exception("Error importing group definition")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Internal error: {str(e)}",
+            detail="Internal server error",
         )
 
 
@@ -3965,7 +3965,7 @@ async def rescan_server(
         logger.exception(f"Failed to scan server '{path}': {e}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to scan server: {str(e)}",
+            detail="Failed to scan server",
         )
 
 

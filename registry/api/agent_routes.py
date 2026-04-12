@@ -749,10 +749,10 @@ async def check_agent_health(
             detail = f"Health check timed out on {url}"
             logger.debug(f"Agent health check for {path} timed out on {url}")
         except httpx.HTTPError as exc:
-            detail = f"Health check failed on {url}: {exc}"
+            detail = f"Health check failed on {url}"
             logger.debug(f"Agent health check for {path} failed on {url}: {exc}")
         except Exception as exc:
-            detail = f"Unexpected health check error on {url}: {exc}"
+            detail = f"Unexpected health check error on {url}"
             logger.debug(f"Agent health check for {path} unexpected error on {url}: {exc}")
 
     # Fallback: if GET-based checks failed, try HEAD on the base URL.
@@ -1093,10 +1093,10 @@ async def rescan_agent(
         return scan_result.model_dump(mode="json")
 
     except Exception as e:
-        logger.error(f"Manual security scan failed for agent '{path}': {e}")
+        logger.exception(f"Manual security scan failed for agent '{path}'")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Security scan failed: {str(e)}",
+            detail="Security scan failed",
         )
 
 

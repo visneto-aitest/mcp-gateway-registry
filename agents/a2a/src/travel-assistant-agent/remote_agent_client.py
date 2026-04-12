@@ -99,7 +99,7 @@ class RemoteAgentClient:
 
         except Exception as e:
             logger.error(f"Message failed: {e}", exc_info=True)
-            return f"Error communicating with {self.agent_name}: {str(e)}"
+            return f"Error communicating with {self.agent_name}: an internal error occurred"
 
     async def close(self):
         # Close the httpx client and cleanup resources

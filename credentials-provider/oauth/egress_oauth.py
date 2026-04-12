@@ -142,7 +142,7 @@ def _run_generic_oauth_flow_for_config(
         cmd.append("--verbose")
 
     logger.info(f"Running OAuth flow for provider: {provider} (config set {config_num})")
-    logger.debug(f"Command: {' '.join(cmd)}")
+    logger.debug(f"Command: {cmd[0]} {cmd[1]} --provider {provider} [credentials redacted]")
 
     try:
         # Run the generic OAuth flow

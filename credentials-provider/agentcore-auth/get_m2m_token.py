@@ -28,6 +28,7 @@ import time
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
+from urllib.parse import urlparse
 
 import requests
 from dotenv import load_dotenv
@@ -112,7 +113,11 @@ def _get_cognito_token(
         Token response containing access_token, expires_in, token_type
     """
     # Construct the token endpoint URL
-    if "auth0.com" in cognito_domain_url:
+    parsed_domain = urlparse(cognito_domain_url)
+    domain_hostname = parsed_domain.hostname or ""
+    is_auth0 = domain_hostname == "auth0.com" or domain_hostname.endswith(".auth0.com")
+
+    if is_auth0:
         url = f"{cognito_domain_url.rstrip('/')}/oauth/token"
         # Use JSON format for Auth0
         headers = {"Content-Type": "application/json"}
@@ -142,14 +147,14 @@ def _get_cognito_token(
         response = response_method()
         response.raise_for_status()  # Raise exception for bad status codes
 
-        provider_type = "Auth0" if "auth0.com" in cognito_domain_url else "Cognito"
+        provider_type = "Auth0" if is_auth0 else "Cognito"
         logger.info(f"Successfully obtained {provider_type} access token")
         return response.json()
 
     except requests.exceptions.RequestException as e:
-        logger.error(f"Error getting token: {e}")
+        logger.error(f"Error getting token: {type(e).__name__}")
         if hasattr(response, "text") and response.text:
-            logger.error(f"Response: {response.text}")
+            logger.debug("Token endpoint returned an error response")
         raise
 
 
@@ -213,8 +218,7 @@ def _save_egress_token(
     egress_path.chmod(0o600)
 
     logger.info(f"Egress token saved to {egress_path}")
-    logger.info(f"Token expires at: {expires_at_human}")
-    logger.info(f"Token expires in {expires_in} seconds")
+    logger.info(f"Token expires at: {expires_at_human} (in {expires_in} seconds)")
 
     return str(egress_path)
 
@@ -233,7 +237,7 @@ def _get_cognito_domain_from_env() -> tuple[str, str | None]:
     if not cognito_domain and user_pool_id:
         cognito_region = _extract_cognito_region_from_pool_id(user_pool_id)
         cognito_domain = f"https://cognito-idp.{cognito_region}.amazonaws.com/{user_pool_id}"
-        logger.info(f"Constructed Cognito domain from pool ID: {cognito_domain}")
+        logger.info("Constructed Cognito domain from pool ID")
 
     return cognito_domain, user_pool_id
 
@@ -296,9 +300,7 @@ def generate_access_token(
     else:
         # Default to first configuration
         configs_to_process = [gateway_configs[0]]
-        logger.info(
-            f"Using first gateway configuration: {gateway_configs[0].get('server_name', 'config_1')}"
-        )
+        logger.info("Using first gateway configuration (index 1)")
 
     # Resolve oauth_tokens_dir path relative to current working directory
     if not Path(oauth_tokens_dir).is_absolute():
@@ -318,7 +320,7 @@ def generate_access_token(
         )
 
         if gateway_arn:
-            logger.info(f"Gateway ARN: {gateway_arn}")
+            logger.debug(f"Gateway ARN: {gateway_arn}")
 
         logger.info("Generating OAuth2 access token...")
 
@@ -339,13 +341,11 @@ def generate_access_token(
                 oauth_tokens_dir=str(oauth_tokens_path),
             )
 
-            logger.info(
-                f"Token generation completed successfully! Egress token saved to {saved_path}"
-            )
+            logger.info("Token generation completed successfully!")
 
         except Exception as e:
             config_label = server_name or f"config_{config['index']}"
-            logger.error(f"Failed to generate token for {config_label}: {e}")
+            logger.error(f"Failed to generate token for {config_label}: {type(e).__name__}")
             if not generate_all:
                 raise
 

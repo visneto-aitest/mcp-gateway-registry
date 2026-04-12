@@ -36,6 +36,7 @@ locals {
   ])
 }
 
+#checkov:skip=CKV_AWS_51:Mutable tags required for latest tag workflow in CI/CD pipeline
 resource "aws_ecr_repository" "services" {
   for_each = var.create_codebuild ? local.ecr_repositories : toset([])
 
@@ -95,6 +96,10 @@ resource "aws_ecr_lifecycle_policy" "services" {
 # S3 BUCKET FOR CODEBUILD ARTIFACTS
 # =============================================================================
 
+#checkov:skip=CKV_AWS_18:This is a build artifacts bucket - access logging not required
+#checkov:skip=CKV_AWS_144:Cross-region replication not required for build artifacts
+#checkov:skip=CKV_AWS_145:SSE-S3 encryption is sufficient for build artifacts
+#checkov:skip=CKV2_AWS_62:Event notifications not required for build artifacts bucket
 resource "aws_s3_bucket" "codebuild" {
   count  = var.create_codebuild ? 1 : 0
   bucket = "mcp-gateway-terraform-${data.aws_caller_identity.current.account_id}"
@@ -123,6 +128,17 @@ resource "aws_s3_bucket_public_access_block" "codebuild" {
   block_public_policy     = true
   ignore_public_acls      = true
   restrict_public_buckets = true
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "codebuild" {
+  count  = var.create_codebuild ? 1 : 0
+  bucket = aws_s3_bucket.codebuild[0].id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }
 
 resource "aws_s3_bucket_policy" "codebuild_tls" {

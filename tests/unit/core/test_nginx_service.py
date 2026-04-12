@@ -6,6 +6,7 @@ Tests the NginxConfigService for configuration generation and reload.
 
 import asyncio
 from unittest.mock import AsyncMock, MagicMock, mock_open, patch
+from urllib.parse import urlparse
 
 import httpx
 import pytest
@@ -628,8 +629,11 @@ server {
                             write_calls = list(mock_file().write.call_args_list)
                             assert len(write_calls) > 0
                             written_content = write_calls[0][0][0]
-                            assert "keycloak.example.com" in written_content
-                            assert "8443" in written_content
+                            # Verify the template variables were substituted with
+                            # the parsed Keycloak URL components
+                            parsed_keycloak = urlparse("https://keycloak.example.com:8443")
+                            assert parsed_keycloak.hostname in written_content
+                            assert str(parsed_keycloak.port) in written_content
 
 
 @pytest.mark.unit
@@ -782,8 +786,11 @@ server {
                             written_content = write_calls[0][0][0]
                             assert "/keycloak/" in written_content
                             assert "/realms/" in written_content
-                            assert "keycloak.example.com" in written_content
-                            assert "8443" in written_content
+                            # Verify the template variables were substituted with
+                            # the parsed Keycloak URL components
+                            parsed_keycloak = urlparse("https://keycloak.example.com:8443")
+                            assert parsed_keycloak.hostname in written_content
+                            assert str(parsed_keycloak.port) in written_content
 
 
 @pytest.mark.unit

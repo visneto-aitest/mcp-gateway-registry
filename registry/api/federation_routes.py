@@ -181,7 +181,7 @@ async def save_federation_config(
         logger.error(f"Failed to save federation config: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to save federation config: {str(e)}",
+            detail="Failed to save federation config",
         )
 
 
@@ -262,7 +262,7 @@ async def update_federation_config(
         logger.error(f"Failed to update federation config: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update federation config: {str(e)}",
+            detail="Failed to update federation config",
         )
 
 
@@ -1198,5 +1198,5 @@ async def sync_federation(
         logger.error(f"Federation sync failed: {e}", exc_info=True)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Federation sync failed: {str(e)}",
+            detail="Federation sync failed",
         )
